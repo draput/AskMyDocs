@@ -1,0 +1,5 @@
+.venv/
+img/
+know-how/
+.gitignore
+*.ps1

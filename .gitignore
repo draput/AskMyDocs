@@ -1,0 +1,12 @@
+.env
+.venv/
+.vscode/
+__pycache__/
+.chroma/
+.ipynb_checkpoints/
+secrets/
+docs/
+db/
+xxx*/
+know_how/
+experimental/
