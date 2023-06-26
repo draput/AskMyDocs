@@ -7,9 +7,9 @@ unstructured
 pypandoc
 beautifulsoup4
 jirapy
+pdf2image
 #python-libmagic
 #pypdf
-#pdf2image
 #unstructured[local-inference]
 #pandoc
 #pandas
