@@ -1,4 +1,4 @@
-# Ask My Docks
+# Ask My Docs
 
 A Streamlit / LangChain based WebApp for experimenting with ALM Models
 
