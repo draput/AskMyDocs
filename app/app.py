@@ -101,7 +101,7 @@ with st.sidebar as sb:
         match st.session_state.search_type:
             case "similarity":
                 st.session_state.similarity_threshold = 0.0  # not used
-            case _:
+            case "similarity_score_threshold":
                 st.number_input(
                     "Similarity Threshold:",
                     0.0,
@@ -110,6 +110,16 @@ with st.sidebar as sb:
                     0.01,
                     key="similarity_threshold",
                     help=help_texts.similarity_threshold_help_text,
+                )
+            case "max_marginal_relevance":
+                st.number_input(
+                    "Diversity:",
+                    0.0,
+                    1.0,
+                    0.5,
+                    0.01,
+                    key="diversity",
+                    help=help_texts.diversity_help_text,
                 )
 
         st.number_input(
@@ -171,7 +181,8 @@ try:
                 input_prompt,
                 vector_store,
                 st.session_state.search_type,
-                st.session_state.similarity_threshold,
+                st.session_state.get("similarity_threshold", 0.0),
+                st.session_state.get("diversity", 0.0),
                 st.session_state.max_relevant_doc_chunks,
             )
             st.caption(f"{len(relevant_documents_chunks)} relevant document chunks found")

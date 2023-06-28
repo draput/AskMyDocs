@@ -100,10 +100,10 @@ def load_documents(
     for file in document_files:
         match file:
             case str() | Path():
-                docs.extend(UnstructuredFileLoader(str(file)).load())
-                # docs.extend(PyPDFLoader(str(file)).load())
+                loader = UnstructuredFileLoader(str(file))
             case _:  # FIXME: be explicit for FileIO!
-                docs.extend(UnstructuredFileIOLoader(file).load())
+                loader = UnstructuredFileIOLoader(file)
+        docs.extend(loader.load())
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     document_chunks = text_splitter.split_documents(docs)
@@ -119,29 +119,27 @@ def search_vector_store(
     query: str,
     vector_store: VectorStore,
     search_type: str,  # Literal["similarity", "similarity_score_threshold", "max_marginal_relevance"] = "similarity",
-    similarity_threshold: float = 0.5,
-    max_returned_document_chunkschunks: int = 15,
+    relevance_score_threshold: float = 0.6,  # 0 - dissimmilar, 1 - most similar
+    diversity: float = 0.5,  # 0 - max diversity, 1 - min diversity
+    max_returned_document_chunks: int = 15,
 ) -> list[Document]:
     match search_type:
         case "similarity":
             relevant_document_chunks = vector_store.similarity_search(
                 query,
-                max_returned_document_chunkschunks,
+                k=max_returned_document_chunks,
             )
         case "similarity_score_threshold":
             relevant_doc_chunks_with_score = vector_store.similarity_search_with_relevance_scores(
-                query,
-                max_returned_document_chunkschunks,
-                score_threshold=similarity_threshold,
+                query, k=max_returned_document_chunks
             )
-            relevant_document_chunks = [ds[0] for ds in relevant_doc_chunks_with_score]
+            relevant_document_chunks = [
+                ds[0] for ds in relevant_doc_chunks_with_score if ds[1] > relevance_score_threshold
+            ]
 
         case "max_marginal_relevance":
             relevant_document_chunks = vector_store.max_marginal_relevance_search(
-                query,
-                max_returned_document_chunkschunks,
-                max_returned_document_chunkschunks * 3,  # evaluate three times more
-                max_returned_document_chunkschunks,
+                query, k=max_returned_document_chunks, lambda_mult=diversity, fetch_k=max_returned_document_chunks
             )
         case _:
             relevant_document_chunks = []
@@ -162,19 +160,27 @@ def ask_question(
 
 
 # if __name__ == "__main__":
-#     file_path = Path("docs") / "Cognitive Complexity.pdf"
-#     store_name = "cognitive_complexity_1000_200"
+#     file_path = Path("docs") / "VG_RAW/FileTab_Preferences_General.txt"
+#     store_name = "home_tab_1000_200"
 
 #     openai_api_key = os.environ.get("OPENAI_API_KEY", "")
 #     language_model, embeddings_engine = get_lm_components("gpt-3.5-turbo", openai_api_key)
-#     vector_store, doc_chunks = load_documents([file_path], embeddings_engine, 1000, 200)
-#     print(f"Loaded in {len(doc_chunks)} chunks ")
+
+#     # vector_store, doc_chunks = load_documents([file_path], embeddings_engine, 1000, 200)
+#     # print(f"Loaded into {len(doc_chunks)} chunks ")
 #     # vector_store.save_local(f"db/{store_name}")
+
 #     vector_store = FAISS.load_local(f"db/{store_name}", embeddings_engine)
-#     query = "Summarize, pls."
+#     query = "8 bit"
 
-#     relevant_documents_chunks = search_vector_store(query, vector_store, "similarity_score_threshold", 0.55, 15)
+#     relevant_documents_chunks = search_vector_store(
+#         query,
+#         vector_store,
+#         "similarity_score_threshold",
+#         relevance_score_threshold=0.6,
+#         max_returned_document_chunks=50,
+#     )
 #     print(f"{len(relevant_documents_chunks)} chunks found")
-#     reply = ask_question(query, relevant_documents_chunks, language_model)
+# #     reply = ask_question(query, relevant_documents_chunks, language_model)
 
-#     print(reply)
+# #     print(reply)

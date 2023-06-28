@@ -14,11 +14,20 @@ selected_search_index_help_text = "Load an existing store with this name"
 search_type_help_text = """
         How to search the local store for the relevant document cunks\n
         similarity - returns document chunks similar to the query\n
-        similarity_score_treshold - returns documents chunks similar to the query if they are below a given similarity treshold\n
+        similarity_score_treshold - returns documents chunks similar to the query if they are above a given similarity treshold\n
         max_marginal_relevance - returns document chunks optimized for similarity AND diversity, considering a similarity treshold too"""
 
 similarity_threshold_help_text = """
-        Consider only the document chunks below this similarity threshold"""
+        Consider only the document chunks above this relevance score\n
+        0 - dissimilar\n
+        1 - most similar
+"""
+
+diversity_help_text = """
+        Determines the degree of diversity among the results\n
+        0 - maximum diversity\n
+        1 - minimum diversity
+"""
 
 max_relevant_doc_chunks_help_text = "Take not more than this number of document chunks, when interacting with the ALM"
 
