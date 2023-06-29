@@ -187,8 +187,10 @@ try:
             )
             st.caption(f"{len(relevant_documents_chunks)} relevant document chunks found")
             st.balloons()
-            reply = lch.ask_question(input_prompt, relevant_documents_chunks, language_model)
-            st.write(reply, unsafe_allow_html=True)
+            reply = lch.ask_question(
+                input_prompt, relevant_documents_chunks, language_model, st.session_state.chain_type
+            )
+            st.write(f"*{reply}*", unsafe_allow_html=True)
 
 except lch.InvalidRequestError as e:
     st.error(e.user_message)
