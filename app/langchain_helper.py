@@ -69,7 +69,7 @@ def get_lm_components(
                 model=model_name,
                 client="",
                 temperature=0.0,
-                batch_size=8,
+                batch_size=15,
                 openai_api_key=openai_api_key,
                 verbose=True,
             )
