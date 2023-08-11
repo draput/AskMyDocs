@@ -91,7 +91,9 @@ def get_lm_components(
         #     language_model = ...
 
     # NOTE: always use the text-embedding-ada-002 embedings model
-    embeddings_engine = OpenAIEmbeddings(client="", model="text-embedding-ada-002", openai_api_key=openai_api_key)
+    embeddings_engine = OpenAIEmbeddings(
+        client="", model="text-embedding-ada-002", openai_api_key=openai_api_key
+    )
 
     return language_model, embeddings_engine
 
@@ -105,18 +107,22 @@ def load_documents_from_files(
     print(document_files)
     all_documents = []
     for file in document_files:
-        if isinstance(file, io.FileIO) or type(file).__name__ == "UploadedFile":  # HACK: for streamlit uploaded files
-            loader = UnstructuredFileIOLoader(file, mode)
-            documents_for_file = loader.load()
-            # HACK: add metadata manually for file IO
-            for document in documents_for_file:
-                document.metadata["source"] = file.name
-        elif isinstance(file, str) or isinstance(file, Path):
-            loader = UnstructuredFileLoader(str(file), mode)
-            documents_for_file = loader.load()
-        else:
-            documents_for_file = []
+        # if (
+        #     isinstance(file, io.FileIO) or type(file).__name__ == "UploadedFile"
+        # ):  # HACK: for streamlit uploaded files
+        #     loader = UnstructuredFileIOLoader(file, mode)
+        #     documents_for_file = loader.load()
+        #     # HACK: add metadata manually for file IO
+        #     for document in documents_for_file:
+        #         document.metadata["source"] = file.name
+        # elif isinstance(file, str) or isinstance(file, Path):
+        #     loader = UnstructuredFileLoader(str(file), mode)
+        #     documents_for_file = loader.load()
+        # else:
+        #     documents_for_file = []
 
+        loader = UnstructuredFileIOLoader(file, mode, strategy="fast")
+        documents_for_file = loader.load()
         all_documents.extend(documents_for_file)
 
     return all_documents
@@ -128,7 +134,9 @@ def split_documents(
     chunk_size: int = 2000,
     chunk_overlap: int = 200,
 ) -> list[Document]:
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size, chunk_overlap=chunk_overlap
+    )
     document_chunks = text_splitter.split_documents(documents)
 
     return document_chunks
@@ -166,17 +174,24 @@ def search_vector_store(
                 include_metadata=True,
             )
         case "similarity_score_threshold":
-            relevant_doc_chunks_with_score = vector_store.similarity_search_with_relevance_scores(
-                query,
-                k=max_returned_document_chunks,
+            relevant_doc_chunks_with_score = (
+                vector_store.similarity_search_with_relevance_scores(
+                    query,
+                    k=max_returned_document_chunks,
+                )
             )
             relevant_document_chunks = [
-                ds[0] for ds in relevant_doc_chunks_with_score if ds[1] > relevance_score_threshold
+                ds[0]
+                for ds in relevant_doc_chunks_with_score
+                if ds[1] > relevance_score_threshold
             ]
 
         case "max_marginal_relevance":
             relevant_document_chunks = vector_store.max_marginal_relevance_search(
-                query, k=max_returned_document_chunks, lambda_mult=diversity, fetch_k=max_returned_document_chunks
+                query,
+                k=max_returned_document_chunks,
+                lambda_mult=diversity,
+                fetch_k=max_returned_document_chunks,
             )
         case _:
             relevant_document_chunks = []
@@ -184,7 +199,9 @@ def search_vector_store(
     return relevant_document_chunks
 
 
-def get_documents_statistics(documents: list[Document], language_model: BaseLanguageModel) -> tuple[int, int]:
+def get_documents_statistics(
+    documents: list[Document], language_model: BaseLanguageModel
+) -> tuple[int, int]:
     no_chars = 0
     no_tokens = 0
     for document in documents:
@@ -206,70 +223,89 @@ def ask_question(
     return response
 
 
-if __name__ == "__main__":
-    file_path = Path("demo/docs") / "How to Write Better Code.epub"
-    # store_name = "home_tab_1000_200"
-    store_name = "better_code"
+# if __name__ == "__main__":
+#     file_path = Path("docs") / "xxx.txt"
+#     # store_name = "home_tab_1000_200"
+#     store_name = "xxx"
 
-    openai_api_key = os.environ.get("OPENAI_API_KEY", "")
-    language_model, embeddings_engine = get_lm_components("gpt-3.5-turbo", openai_api_key)
+#     openai_api_key = os.environ.get("OPENAI_API_KEY", "")
+#     language_model, embeddings_model = get_lm_components(
+#         "gpt-3.5-turbo", openai_api_key
+#     )
 
-    file_io = FileIO(str(file_path))
-    docs = load_documents_from_files([file_io], mode="paged")
+#     # file_io = FileIO(str(file_path))
+#     # docs = load_documents_from_files([file_io], mode="single")
+#     docs = load_documents_from_files([file_path], "", mode="single")
 
-    print()
+#     document_chunks = split_documents(
+#         docs,
+#         "",
+#         1000,
+#         200,
+#     )
 
-    # vector_store, doc_chunks = load_documents([file_path], embeddings_engine, 1000, 200)
-    # retriever = vector_store.as_retriever(search_type="similarity")  # allowed_search_types
-    # print(f"Loaded into {len(doc_chunks)} chunks ")
-    # vector_store.save_local(f"db/{store_name}")
+#     vector_store = load_store(
+#         document_chunks,
+#         embeddings_model,
+#     )
+#     vector_store.save_local(f"db/{store_name}")  # type: ignore
 
-    vector_store = FAISS.load_local(f"db/{store_name}", embeddings_engine)
-    query = "How can I write is better code? Use only the povided context."
+#     print()
 
-    relevant_doc_chunks = vector_store.similarity_search(query=query)  # $$$
+#     # vector_store, doc_chunks = load_documents([file_path], embeddings_engine, 1000, 200)
+#     # retriever = vector_store.as_retriever(
+#     #     search_type="similarity"
+#     # )  # allowed_search_types
+#     # print(f"Loaded into {len(doc_chunks)} chunks ")
+#     # vector_store.save_local(f"db/{store_name}")
 
-    print()
+#     vector_store = FAISS.load_local(f"db/{store_name}", embeddings_model)
 
-    # qa = load_qa_chain(
-    #     llm=language_model,
-    #     chain_type="stuff",
-    #     verbose=True,
-    # )
+#     query = "How can I write is better code? Use only the povided context."
+#     relevant_doc_chunks = vector_store.similarity_search(query=query)  # $$$
 
-    # rsp = qa(
-    #     inputs={"question": query, qa.input_key: relevant_doc_chunks},
-    #     return_only_outputs=False,
-    #     include_run_info=False,
-    # )
-    # print(rsp)
+#     print()
 
-    # for doc_chunk in relevant_doc_chunks:
-    #     doc_chunk.metadata["source"] = "some_source"
+#     # qa = load_qa_chain(
+#     #     llm=language_model,
+#     #     chain_type="stuff",
+#     #     verbose=True,
+#     # )
 
-    # qa = load_qa_with_sources_chain(
-    #     llm=language_model,
-    #     chain_type="stuff",
-    #     verbose=True,
-    # )
+#     # rsp = qa(
+#     #     inputs={"question": query, qa.input_key: relevant_doc_chunks},
+#     #     return_only_outputs=False,
+#     #     include_run_info=False,
+#     # )
+#     # print(rsp)
 
-    # # reply = qa.run(input_documents=relevant_doc_chunks, question=query)
-    # # qa is a callable
-    # rsp = qa(
-    #     inputs={"question": query, "input_documents": relevant_doc_chunks},
-    #     return_only_outputs=False,
-    #     include_run_info=True,
-    # )
-    # print(rsp)
+#     # for doc_chunk in relevant_doc_chunks:
+#     #     doc_chunk.metadata["source"] = "some_source"
+
+#     # qa = load_qa_with_sources_chain(
+#     #     llm=language_model,
+#     #     chain_type="stuff",
+#     #     verbose=True,
+#     # )
+
+#     # # reply = qa.run(input_documents=relevant_doc_chunks, question=query)
+#     # # qa is a callable
+#     # rsp = qa(
+#     #     inputs={"question": query, "input_documents": relevant_doc_chunks},
+#     #     return_only_outputs=False,
+#     #     include_run_info=True,
+#     # )
+#     # print(rsp)
 
 #     relevant_documents_chunks = search_vector_store(
 #         query,
 #         vector_store,
 #         "similarity_score_threshold",
 #         relevance_score_threshold=0.6,
-#         max_returned_document_chunks=50,
+#         max_returned_document_chunks=10,
 #     )
 #     print(f"{len(relevant_documents_chunks)} chunks found")
-# #     reply = ask_question(query, relevant_documents_chunks, language_model)
 
-# #     print(reply)
+#     reply = ask_question(query, relevant_documents_chunks, language_model)
+
+#     print(reply)

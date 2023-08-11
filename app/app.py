@@ -14,8 +14,10 @@ import langchain_helper as lch
 # __ LIB ______________________________________________________________________
 
 
-@st.cache_data()
-def get_lm_components(model_name: str, openai_api_key: str) -> tuple[lch.BaseLanguageModel, lch.OpenAIEmbeddings]:
+# @st.cache_data()
+def get_lm_components(
+    model_name: str, openai_api_key: str
+) -> tuple[lch.BaseLanguageModel, lch.OpenAIEmbeddings]:
     return lch.get_lm_components(model_name, openai_api_key)
 
 
@@ -255,8 +257,13 @@ try:
         str(st.session_state.api_key),
     )
 
+    # st.write(st.session_state)
+
     if st.session_state.uploaded_files:
-        st.session_state["documents"], st.session_state["document_chunks"] = load_and_split_documents(
+        (
+            st.session_state["documents"],
+            st.session_state["document_chunks"],
+        ) = load_and_split_documents(
             st.session_state.uploaded_files,
             st.session_state.loader_type,
             st.session_state.loader_mode,
@@ -270,7 +277,9 @@ try:
             no_files = len(st.session_state.uploaded_files)
             no_documents = len(st.session_state.documents)
             no_chunks = len(st.session_state.document_chunks)
-            no_characters, no_tokens = lch.get_documents_statistics(st.session_state.document_chunks, language_model)
+            no_characters, no_tokens = lch.get_documents_statistics(
+                st.session_state.document_chunks, language_model
+            )
             st.caption(
                 f"{no_files} files, {no_documents} documents,  {no_chunks} chunks, {no_tokens} tokens, {no_characters} characters<br>",
                 unsafe_allow_html=True,
@@ -278,20 +287,28 @@ try:
 
     if "save_store" in st.session_state and st.session_state.save_store:
         st.balloons()
-        vector_store = lch.load_store(st.session_state.document_chunks, embeddings_model)
+        vector_store = lch.load_store(
+            st.session_state.document_chunks, embeddings_model
+        )
         # TODO: load or merge
         vector_store.save_local(str(Path("db") / st.session_state.store_name))
         st.session_state["vector_store"] = vector_store
         with col1:
-            st.caption(f'A local store was initialized and saved under the name "{st.session_state.store_name}"')
+            st.caption(
+                f'A local store was initialized and saved under the name "{st.session_state.store_name}"'
+            )
         st.experimental_rerun()
 
     if "load_store" in st.session_state and st.session_state.load_store:
         try:
-            vector_store = lch.FAISS.load_local(f"db/{st.session_state.selected_store}", embeddings_model)
+            vector_store = lch.FAISS.load_local(
+                f"db/{st.session_state.selected_store}", embeddings_model
+            )
             st.session_state["vector_store"] = vector_store
             with col1:
-                st.subheader(f'"The {st.session_state.selected_store}" store was selected')
+                st.subheader(
+                    f'"The {st.session_state.selected_store}" store was selected'
+                )
             st.experimental_rerun()
         except RuntimeError:
             st.warning("No local store selected")
@@ -310,7 +327,9 @@ try:
                 st.session_state.max_relevant_doc_chunks,
             )
             with col1:
-                no_characters, no_tokens = lch.get_documents_statistics(relevant_documents_chunks, language_model)
+                no_characters, no_tokens = lch.get_documents_statistics(
+                    relevant_documents_chunks, language_model
+                )
                 st.caption(
                     f"{len(relevant_documents_chunks)} relevant document chunks found with a total of "
                     f"{no_tokens} tokens and {no_characters} characters"
@@ -321,14 +340,24 @@ try:
                 for i, chunk in enumerate(relevant_documents_chunks):
                     with st.expander(f"Document Chunk #{i + 1}"):
                         st.markdown(chunk.metadata)
-                        text = re.sub(r"\s+", " ", chunk.page_content)  # FIXME - rise level of abstraction
-                        st.markdown(f'<p style="font-size:12px;"> {text} </p><hr>', unsafe_allow_html=True)
+                        text = re.sub(
+                            r"\s+", " ", chunk.page_content
+                        )  # FIXME - rise level of abstraction
+                        st.markdown(
+                            f'<p style="font-size:12px;"> {text} </p><hr>',
+                            unsafe_allow_html=True,
+                        )
 
             reply = lch.ask_question(
-                input_prompt, relevant_documents_chunks, language_model, st.session_state.chain_type
+                input_prompt,
+                relevant_documents_chunks,
+                language_model,
+                st.session_state.chain_type,
             )
             with col1:
-                style = "" if len(relevant_documents_chunks) > 0 else 'style="color:red;"'
+                style = (
+                    "" if len(relevant_documents_chunks) > 0 else 'style="color:red;"'
+                )
                 st.write(f"<p {style}><i> {reply} </i></p>", unsafe_allow_html=True)
 
 
